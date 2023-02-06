@@ -1,15 +1,13 @@
+import { useState, useEffect } from "react";
 import axios from "axios";
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
 
-export const SignUp = () => {
-  const navigate = useNavigate();
+export const SignIn = () => {
   const [disable, setDisable] = useState(true);
   const [valid, setValid] = useState({
     email: false,
     password: false,
   });
-  const [signUpInfo, setSignUpInfo] = useState({
+  const [signInInfo, setSignInInfo] = useState({
     email: "",
     password: "",
   });
@@ -22,8 +20,8 @@ export const SignUp = () => {
   }, [valid]);
   const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, validity } = event.target;
-    setSignUpInfo({
-      ...signUpInfo,
+    setSignInInfo({
+      ...signInInfo,
       [name]: value,
     });
     setValid({
@@ -52,24 +50,24 @@ export const SignUp = () => {
       />
       <button
         disabled={disable}
-        data-testid="signup-button"
+        data-testid="signin-button"
         onClick={() => {
           axios
             .post(
-              "/auth/signup",
-              { email: signUpInfo.email, password: signUpInfo.password },
+              "/auth/signin",
+              { email: signInInfo.email, password: signInInfo.password },
               {
                 baseURL: "https://pre-onboarding-selection-task.shop",
                 headers: { "Content-Type": "application/json" },
               }
             )
-            .then(() => {
-              navigate("/signin");
-            })
-            .catch((error) => alert(error.response.data.message));
+            .then((response) =>
+              localStorage.setItem("jwt", response.data.access_token)
+            )
+            .catch((error) => console.error(error));
         }}
       >
-        회원가입
+        로그인
       </button>
     </div>
   );
