@@ -1,5 +1,35 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router";
 import axios from "axios";
+import { Section } from "../style/publicStyle";
+import styled from "styled-components";
+
+const TextBar = styled.input`
+  width: 24rem;
+  height: 2rem;
+`;
+
+const TextBarBtn = styled.button`
+  width: 4rem;
+  height: 2.4rem;
+`;
+
+const List = styled.ul`
+  width: 26rem;
+  height: auto;
+`;
+
+const Item = styled.li`
+  position: relative;
+  padding: 6px;
+`;
+
+const BtnDiv = styled.div`
+  display: inline-box;
+  position: absolute;
+  right: 6px;
+`;
+
 interface todo {
   id: number;
   isCompleted: boolean;
@@ -8,6 +38,7 @@ interface todo {
 }
 
 export const Todo = () => {
+  const navigate = useNavigate();
   const [todos, setTodos] = useState<todo[]>([]);
   const [newTodo, setNewTodo] = useState<string>("");
   const [updateTarget, setUpdateTarget] = useState<todo>({
@@ -19,6 +50,9 @@ export const Todo = () => {
   const [updateStr, setUpdateStr] = useState<string>("");
   const addTodoRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
+    if (!localStorage.getItem("jwt") || localStorage.getItem("jwt") === "") {
+      navigate("/signin");
+    }
     axios
       .get("/todos", {
         baseURL: "https://pre-onboarding-selection-task.shop",
@@ -28,17 +62,43 @@ export const Todo = () => {
         setTodos(response.data);
       })
       .catch((error) => console.error(error));
-  }, []);
+  }, [navigate]);
   return (
-    <div>
+    <Section>
+      <h1>TodoList</h1>
       <div>
-        <input
+        <TextBar
           type="text"
           data-testid="new-todo-input"
+          required
           ref={addTodoRef}
           onChange={(event) => setNewTodo(event.target.value)}
+          onKeyUp={(event) => {
+            if (event.keyCode === 13) {
+              axios
+                .post(
+                  "/todos",
+                  { todo: newTodo },
+                  {
+                    baseURL: "https://pre-onboarding-selection-task.shop",
+                    headers: {
+                      Authorization: `Bearer ${localStorage.getItem("jwt")}`,
+                      "Content-Type": "application/json",
+                    },
+                  }
+                )
+                .then((response) => {
+                  setTodos([...todos, response.data]);
+                  return response;
+                })
+                .catch((error) => console.error(error));
+              if (addTodoRef.current) {
+                addTodoRef.current.value = "";
+              }
+            }
+          }}
         />
-        <button
+        <TextBarBtn
           data-testid="new-todo-add-button"
           onClick={() => {
             axios
@@ -64,11 +124,11 @@ export const Todo = () => {
           }}
         >
           추가
-        </button>
+        </TextBarBtn>
       </div>
-      <ul>
+      <List>
         {todos.map((item: todo) => (
-          <li key={item.id}>
+          <Item key={item.id}>
             <label>
               {item.isCompleted ? (
                 <input
@@ -134,7 +194,7 @@ export const Todo = () => {
               )}
             </label>
             {item === updateTarget ? (
-              <div>
+              <BtnDiv>
                 <button
                   data-testid="submit-button"
                   onClick={() => {
@@ -188,9 +248,9 @@ export const Todo = () => {
                 >
                   취소
                 </button>
-              </div>
+              </BtnDiv>
             ) : (
-              <div>
+              <BtnDiv>
                 <button
                   data-testid="modify-button"
                   onClick={() => {
@@ -221,11 +281,11 @@ export const Todo = () => {
                 >
                   삭제
                 </button>
-              </div>
+              </BtnDiv>
             )}
-          </li>
+          </Item>
         ))}
-      </ul>
-    </div>
+      </List>
+    </Section>
   );
 };
